@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import { HiSearch } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
@@ -9,48 +9,44 @@ import {
   FormInput,
 } from './Searchbar.styled';
 
-export class Searchbar extends Component {
-  state = {
-    searchImage: '',
+export default function Searchbar({ onSubmit }) {
+  const [searchImage, setSearchImage] = useState('');
+
+  const onInputChange = evt => {
+    setSearchImage(evt.currentTarget.value.toLowerCase());
   };
 
-  onInputChange = evt => {
-    this.setState({ searchImage: evt.currentTarget.value.toLowerCase() });
-  };
-
-  onSubmit = evt => {
+  const onInputSubmit = evt => {
     evt.preventDefault();
-    if (this.state.searchImage.trim() === '') {
+    if (searchImage.trim() === '') {
       toast.error('Please, enter your search query. ', {
         position: 'top-right',
       });
-      this.setState({ searchImage: '' });
+      setSearchImage('');
       return;
     }
-    this.props.onSubmit(this.state.searchImage);
-    this.setState({ searchImage: '' });
+    onSubmit(searchImage);
+    setSearchImage('');
   };
 
-  render() {
-    return (
-      <SearchbarHeader>
-        <Form onSubmit={this.onSubmit}>
-          <FormButton type="submit">
-            <HiSearch size={26} /> <span>Search</span>
-          </FormButton>
+  return (
+    <SearchbarHeader>
+      <Form onSubmit={onInputSubmit}>
+        <FormButton type="submit">
+          <HiSearch size={26} /> <span>Search</span>
+        </FormButton>
 
-          <FormInput
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos"
-            value={this.state.searchImage}
-            onChange={this.onInputChange}
-          />
-        </Form>
-      </SearchbarHeader>
-    );
-  }
+        <FormInput
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos"
+          value={searchImage}
+          onChange={onInputChange}
+        />
+      </Form>
+    </SearchbarHeader>
+  );
 }
 
 Searchbar.propTypes = {

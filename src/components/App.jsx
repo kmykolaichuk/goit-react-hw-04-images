@@ -1,40 +1,33 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import { fetchImages } from '../api';
-import { Searchbar } from './Searchbar/Searchbar';
+import Searchbar from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { LoadMoreBtn } from './Button/Button';
 import { Loader } from './Loader/Loader';
-import { Modal } from './Modal/Modal';
+import Modal from './Modal/Modal';
 
-export class App extends Component {
-  state = {
-    searchImage: '',
-    images: [],
-    page: 1,
-    status: 'idle',
-    showModal: false,
-    largeImageModal: null,
-  };
+export default function App() {
+  const [searchImage, setSearchImage] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('idle');
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageModal, setLargeImageModal] = useState(null);
 
-  async componentDidUpdate(_, prevState) {
-    const prevSearch = prevState.searchImage;
-    const newSearch = this.state.searchImage;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
+  useEffect(() => {
+    if (searchImage === '') {
+      return;
+    }
 
-    if (prevSearch !== newSearch || prevPage !== nextPage) {
-      this.setState({ status: 'pending' });
-      if (prevSearch !== newSearch) {
-        this.setState({ page: 1 });
-      }
+    async function renderImages() {
+      setStatus('pending');
 
       try {
-        const imageList = await fetchImages(newSearch, nextPage);
-        this.setState(prevState => ({
-          images: [...prevState.images, ...imageList],
-          status: 'resolved',
-        }));
+        const imageList = await fetchImages(searchImage, page);
+        setImages(images => [...images, ...imageList]);
+        setStatus('resolved');
+
         if (imageList.length === 0) {
           toast.error(
             'Sorry, there are no images matching your search query. Please, try again.',
@@ -47,48 +40,44 @@ export class App extends Component {
         toast.error('Something went wrong. Please, reload the page.', {
           position: 'top-right',
         });
-        this.setState({ status: 'rejected' });
+        setStatus('rejected');
       }
     }
-  }
 
-  onFormSubmit = searchImage => {
-    this.setState({ searchImage, images: [], page: 1 });
+    renderImages();
+  }, [searchImage, page]);
+
+  const onFormSubmit = searchQuery => {
+    setSearchImage(searchQuery);
+    setImages([]);
+    setPage(1);
   };
 
-  onClickLoadBtn = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onClickLoadBtn = () => {
+    setPage(page => page + 1);
   };
 
-  onToggleModal = largeImageURL => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-    this.setState({ largeImageModal: largeImageURL });
+  const onToggleModal = largeImageURL => {
+    setShowModal(showModal => !showModal);
+    setLargeImageModal(largeImageURL);
   };
 
-  render() {
-    const { images, status, showModal, largeImageModal } = this.state;
-
-    return (
-      <>
-        <Searchbar onSubmit={this.onFormSubmit} />
-        {images.length > 0 && (
-          <ImageGallery pictures={images} onClick={this.onToggleModal} />
-        )}
-        {status === 'pending' && <Loader />}
-        {(images.length === 12 || images.length > 12) && (
-          <LoadMoreBtn onClick={this.onClickLoadBtn} />
-        )}
-        {showModal && (
-          <Modal onClose={this.onToggleModal}>
-            <img src={largeImageModal} alt="" />
-          </Modal>
-        )}
-        <ToastContainer autoClose={3000} />
-      </>
-    );
-  }
+  return (
+    <>
+      <Searchbar onSubmit={onFormSubmit} />
+      {images.length > 0 && (
+        <ImageGallery pictures={images} onClick={onToggleModal} />
+      )}
+      {status === 'pending' && <Loader />}
+      {(images.length === 12 || images.length > 12) && (
+        <LoadMoreBtn onClick={onClickLoadBtn} />
+      )}
+      {showModal && (
+        <Modal onClose={onToggleModal}>
+          <img src={largeImageModal} alt="" />
+        </Modal>
+      )}
+      <ToastContainer autoClose={3000} />
+    </>
+  );
 }
